@@ -1,0 +1,24 @@
+sudo: required
+language: generic
+services:
+    - docker
+
+before_install:
+    - docker build -t jconnro/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+    - docker run -e CI=true jconnro/react-test npm test
+
+# Builds in production after tests pass
+after_success:
+    - docker build -t jconnro/multi-client ./client
+    - docker build -t jconnro/multi-nginx ./nginx
+    - docker build -t jconnro/multi-server ./server
+    - docker build -t jconnro/multi-worker ./worker
+    # Log in to the docker CLI
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+    # Take those images and push them to docker hub
+    - docker push jconnro/multi-client
+    - docker push jconnro/multi-nginx
+    - docker push jconnro/multi-server
+    - docker push jconnro/multi-worker
